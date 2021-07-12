@@ -151,10 +151,12 @@ export default function ({
                 t.binaryExpression(
                   '+',
                   t.stringLiteral(
-                    relativePath(
-                      state.file.opts.caller.pagesDirs[0],
-                      state.file.opts.filename
-                    ) + ' -> '
+                    (state.file.opts.caller?.pagesDirs[0]
+                      ? relativePath(
+                          state.file.opts.caller.pagesDirs[0],
+                          state.file.opts.filename
+                        )
+                      : state.file.opts.filename) + ' -> '
                   ),
                   node
                 )

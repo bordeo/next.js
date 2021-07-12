@@ -141,8 +141,8 @@ if (process.env.__NEXT_I18N_SUPPORT) {
   }
 }
 
-if (process.env.__NEXT_SCRIPT_LOADER && data.scriptLoader) {
-  const { initScriptLoader } = require('./experimental-script')
+if (data.scriptLoader) {
+  const { initScriptLoader } = require('./script')
   initScriptLoader(data.scriptLoader)
 }
 
@@ -259,7 +259,7 @@ class Container extends React.Component<{
   }
 }
 
-export const emitter: MittEmitter = mitt()
+export const emitter: MittEmitter<string> = mitt()
 let CachedComponent: React.ComponentType
 
 export default async (opts: { webpackHMR?: any } = {}) => {
@@ -494,7 +494,8 @@ export function renderError(renderErrorProps: RenderErrorProps): Promise<any> {
 }
 
 let reactRoot: any = null
-let shouldUseHydrate: boolean = typeof ReactDOM.hydrate === 'function'
+let shouldHydrate: boolean = typeof ReactDOM.hydrate === 'function'
+
 function renderReactElement(
   domEl: HTMLElement,
   fn: (cb: () => void) => JSX.Element
@@ -504,24 +505,20 @@ function renderReactElement(
     performance.mark('beforeRender')
   }
 
-  const reactEl = fn(
-    shouldUseHydrate ? markHydrateComplete : markRenderComplete
-  )
-  if (process.env.__NEXT_REACT_MODE !== 'legacy') {
+  const reactEl = fn(shouldHydrate ? markHydrateComplete : markRenderComplete)
+  if (process.env.__NEXT_REACT_ROOT) {
     if (!reactRoot) {
-      const opts = { hydrate: shouldUseHydrate }
-      reactRoot =
-        process.env.__NEXT_REACT_MODE === 'concurrent'
-          ? (ReactDOM as any).unstable_createRoot(domEl, opts)
-          : (ReactDOM as any).unstable_createBlockingRoot(domEl, opts)
+      reactRoot = (ReactDOM as any).createRoot(domEl, {
+        hydrate: shouldHydrate,
+      })
     }
     reactRoot.render(reactEl)
-    shouldUseHydrate = false
+    shouldHydrate = false
   } else {
     // The check for `.hydrate` is there to support React alternatives like preact
-    if (shouldUseHydrate) {
+    if (shouldHydrate) {
       ReactDOM.hydrate(reactEl, domEl)
-      shouldUseHydrate = false
+      shouldHydrate = false
     } else {
       ReactDOM.render(reactEl, domEl)
     }
